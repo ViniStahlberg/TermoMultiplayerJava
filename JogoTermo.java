@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -144,6 +145,12 @@ public class JogoTermo extends JFrame {
 
         String[] info = msg.split(";");
 
+        if (msg.startsWith("PALAVRA_ATUALIZADA;")) {
+            palavraOponente = info[1];
+            JOptionPane.showMessageDialog(this, "Oponente atualizou a palavra secreta!");
+            return;
+        }
+
         suaVez = Boolean.parseBoolean(info[0]);
         palavraOponente = info[1];
     }
@@ -154,20 +161,27 @@ public class JogoTermo extends JFrame {
                 while (!fim) {
                     if (!suaVez) {
                         String tentativa = (String) servidorEntrada.readObject();
-                        recebidas++;
 
-                        if (tentativa.equalsIgnoreCase(palavraSecreta)) {
-                            // servidorConexao.close();
-                            finalizarJogo("O oponente acertou sua palavra.\nVocê perdeu.");
+                        if (tentativa.startsWith("PALAVRA_ATUALIZADA;")) {
+                            palavraOponente = tentativa.split(";")[1];
+                            JOptionPane.showMessageDialog(this, "O oponente trocou a palavra secreta!");
+                        } else {
+
+                            recebidas++;
+
+                            if (tentativa.equalsIgnoreCase(palavraSecreta)) {
+                                // servidorConexao.close();
+                                finalizarJogo("O oponente acertou sua palavra.\nVocê perdeu.");
+                            }
+
+                            if (feitas >= MAX && recebidas >= MAX) {
+                                // servidorConexao.close();
+                                finalizarJogo("Empate!\nA palavra era: " + palavraOponente);
+                            }
+
+                            suaVez = true;
+                            atualizarStatus();
                         }
-
-                        if (feitas >= MAX && recebidas >= MAX) {
-                            // servidorConexao.close();
-                            finalizarJogo("Empate!\nA palavra era: " + palavraOponente);
-                        }
-
-                        suaVez = true;
-                        atualizarStatus();
                     }
 
                     Thread.sleep(100);
@@ -182,6 +196,37 @@ public class JogoTermo extends JFrame {
         linha.setBackground(new Color(30, 30, 30));
         linha.setMaximumSize(new Dimension(600, 80));
 
+        boolean[] letrasVerdes = new boolean[TAM];
+        boolean[] letrasAmarelas = new boolean[TAM];
+        int[] contagemLetrasAlvo = new int[26]; // letras do alfabeto
+
+        // Conta quantas vezes cada letra aparece na palavra alvo
+        for (int i = 0; i < TAM; i++) { // copntagem de vezes que as letras da palavra que foi chutada aparece no alvo
+            char c = alvo.charAt(i);
+            contagemLetrasAlvo[c - 'A']++; // incrementa no array de acordo com tabela ascii
+        }
+
+        for (int i = 0; i < TAM; i++) { // posições corretas
+            char tentativaChar = tentativa.charAt(i);
+            char alvoChar = alvo.charAt(i);
+
+            if (tentativaChar == alvoChar) {
+                letrasVerdes[i] = true;
+                contagemLetrasAlvo[tentativaChar - 'A']--;
+            }
+        }
+
+        for (int i = 0; i < TAM; i++) { // letra certa e posição errada
+            if (letrasVerdes[i])
+                continue;
+
+            char tentativaChar = tentativa.charAt(i);
+            if (contagemLetrasAlvo[tentativaChar - 'A'] > 0) {
+                letrasAmarelas[i] = true;
+                contagemLetrasAlvo[tentativaChar - 'A']--; // decrementa para detecção da proxima letra (for (i))
+            }
+        }
+
         for (int i = 0; i < TAM; i++) {
             JLabel lbl = new JLabel(String.valueOf(tentativa.charAt(i)), SwingConstants.CENTER);
             lbl.setFont(new Font("Arial", Font.BOLD, 40));
@@ -190,9 +235,9 @@ public class JogoTermo extends JFrame {
             lbl.setPreferredSize(new Dimension(60, 60));
             lbl.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
 
-            if (tentativa.charAt(i) == alvo.charAt(i)) {
+            if (letrasVerdes[i]) {
                 lbl.setBackground(new Color(106, 170, 100));
-            } else if (alvo.contains(String.valueOf(tentativa.charAt(i)))) {
+            } else if (letrasAmarelas[i]) {
                 lbl.setBackground(new Color(201, 180, 88));
             } else {
                 lbl.setBackground(new Color(100, 100, 100));
@@ -220,7 +265,8 @@ public class JogoTermo extends JFrame {
         fim = true;
         JOptionPane.showMessageDialog(this, mensagem);
 
-        int opcao = JOptionPane.showConfirmDialog(this, "Deseja jogar novamente?", "Reiniciar", JOptionPane.YES_NO_OPTION);
+        int opcao = JOptionPane.showConfirmDialog(this, "Deseja jogar novamente?", "Reiniciar",
+                JOptionPane.YES_NO_OPTION);
 
         if (opcao == JOptionPane.YES_OPTION) {
             reiniciarJogo();
@@ -231,12 +277,6 @@ public class JogoTermo extends JFrame {
 
     private void reiniciarJogo() {
         try {
-            if (servidorEntrada != null)
-                servidorEntrada.close();
-            if (servidorSaida != null)
-                servidorSaida.close();
-            if (servidorConexao != null)
-                servidorConexao.close();
 
             palavraSecreta = "";
             palavraOponente = "";
@@ -247,17 +287,36 @@ public class JogoTermo extends JFrame {
             painelTentativas.removeAll();
             painelTentativas.revalidate();
             painelTentativas.repaint();
+            lblStatus.setText("Preparando nova partida...");
 
             Thread.sleep(1000);
 
-            conectar();
+            // conectar();
             definirPalavra();
-            receberPalavraOponente();
+            // receberPalavraOponente();
+            String resposta = (String) servidorEntrada.readObject();
+            if (!resposta.startsWith("true;") && !resposta.startsWith("false;")) {
+                throw new Exception("Resposta inválida do servidor: " + resposta);
+            }
+
+            String[] info = resposta.split(";");
+            suaVez = Boolean.parseBoolean(info[0]);
+            palavraOponente = info[1];
             atualizarStatus();
             jogar();
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Erro ao reiniciar: " + e.getMessage());
+        }
+    }
+
+    public void atualizarPalavraSecreta(String novaPalavra) throws Exception {
+        if (novaPalavra.length() == TAM) {
+            palavraSecreta = novaPalavra.trim().toUpperCase();
+            servidorSaida.writeObject("ATUALIZAR_PALAVRA;" + palavraSecreta); // Envia um comando especial
+            servidorSaida.flush();
+        } else {
+            JOptionPane.showMessageDialog(this, "A palavra deve ter " + TAM + " letras!");
         }
     }
 }

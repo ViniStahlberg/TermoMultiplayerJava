@@ -72,8 +72,15 @@ public class ServidorTermo {
         try {
             while (true) {
                 String tentativa = (String) in.readObject();
-                out.writeObject(tentativa);
-                out.flush();
+
+                if (tentativa.startsWith("ATUALIZAR_PALAVRA;")) {
+                    String novaPalavra = tentativa.split(";")[1];
+                    out.writeObject("PALAVRA_ATUALIZADA;" + novaPalavra);
+                    out.flush();
+                } else {
+                    out.writeObject(tentativa);
+                    out.flush();
+                }
             }
         } catch (Exception e) {
             System.out.println("Conexão encerrada.");
@@ -82,9 +89,12 @@ public class ServidorTermo {
 
     private static void fecharConexao(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
         try {
-            if (in != null)in.close();
-            if (out != null)out.close();
-            if (socket != null && !socket.isClosed())socket.close();
+            if (in != null)
+                in.close();
+            if (out != null)
+                out.close();
+            if (socket != null && !socket.isClosed())
+                socket.close();
         } catch (IOException e) {
             System.err.println("Erro ao fechar conexão: " + e.getMessage());
         }
