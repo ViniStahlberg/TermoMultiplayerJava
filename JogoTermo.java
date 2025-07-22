@@ -31,33 +31,39 @@ public class JogoTermo extends JFrame {
 
     public JogoTermo() throws Exception {
         JanelaJogo();
-        
+
         conectar();
-        
+
         definirPalavra();
-        
+
         receberPalavraOponente();
-        
+
         atualizarStatus();
-        
+
         jogar();
     }
 
     private void conectar() throws Exception {
-        servidorConexao = new Socket(InetAddress.getByName(Config.getIp()), Config.getPorta());
-        
-        servidorSaida = new ObjectOutputStream(servidorConexao.getOutputStream());
-        servidorSaida.flush();
-        
-        servidorEntrada = new ObjectInputStream(servidorConexao.getInputStream());
+        try {
+
+            servidorConexao = new Socket(InetAddress.getByName(Config.getIp()), Config.getPorta());
+
+            servidorSaida = new ObjectOutputStream(servidorConexao.getOutputStream());
+            servidorSaida.flush();
+
+            servidorEntrada = new ObjectInputStream(servidorConexao.getInputStream());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao conectar: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void JanelaJogo() {
         setTitle("Jogo Termo");
-        
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
-        
+
         setLayout(new BorderLayout());
 
         lblStatus = new JLabel("Aguardando...", SwingConstants.CENTER);
@@ -102,13 +108,13 @@ public class JogoTermo extends JFrame {
                     mostrarTentativa(tentativa, palavraOponente);
 
                     if (tentativa.equalsIgnoreCase(palavraOponente)) {
-                        JOptionPane.showMessageDialog(this, "Parabéns!\nVocê acertou!");
-                        fim = true;
-                        servidorConexao.close();
+                        // servidorConexao.close();
+                        finalizarJogo("Parabéns!\nVocê acertou!");
+
                     } else if (feitas >= MAX && recebidas >= MAX) {
-                        JOptionPane.showMessageDialog(this, "Empate!\nA palavra era: " + palavraOponente);
-                        fim = true;
-                        servidorConexao.close();
+                        // servidorConexao.close();
+                        finalizarJogo("Empate!\nA palavra era: " + palavraOponente);
+
                     } else {
                         suaVez = false;
                         atualizarStatus();
@@ -151,19 +157,13 @@ public class JogoTermo extends JFrame {
                         recebidas++;
 
                         if (tentativa.equalsIgnoreCase(palavraSecreta)) {
-                            JOptionPane.showMessageDialog(this, "O oponente acertou sua palavra.\nVocê perdeu.");
-                            fim = true;
-                            servidorConexao.close();
-                            atualizarStatus();
-                            return;
+                            // servidorConexao.close();
+                            finalizarJogo("O oponente acertou sua palavra.\nVocê perdeu.");
                         }
 
                         if (feitas >= MAX && recebidas >= MAX) {
-                            JOptionPane.showMessageDialog(this, "Empate!\nA palavra era: " + palavraOponente);
-                            fim = true;
-                            servidorConexao.close();
-                            atualizarStatus();
-                            return;
+                            // servidorConexao.close();
+                            finalizarJogo("Empate!\nA palavra era: " + palavraOponente);
                         }
 
                         suaVez = true;
@@ -213,6 +213,51 @@ public class JogoTermo extends JFrame {
             lblStatus.setText("Sua vez");
         } else {
             lblStatus.setText("Esperando o oponente...");
+        }
+    }
+
+    private void finalizarJogo(String mensagem) {
+        fim = true;
+        JOptionPane.showMessageDialog(this, mensagem);
+
+        int opcao = JOptionPane.showConfirmDialog(this, "Deseja jogar novamente?", "Reiniciar", JOptionPane.YES_NO_OPTION);
+
+        if (opcao == JOptionPane.YES_OPTION) {
+            reiniciarJogo();
+        } else {
+            System.exit(0);
+        }
+    }
+
+    private void reiniciarJogo() {
+        try {
+            if (servidorEntrada != null)
+                servidorEntrada.close();
+            if (servidorSaida != null)
+                servidorSaida.close();
+            if (servidorConexao != null)
+                servidorConexao.close();
+
+            palavraSecreta = "";
+            palavraOponente = "";
+            feitas = 0;
+            recebidas = 0;
+            fim = false;
+
+            painelTentativas.removeAll();
+            painelTentativas.revalidate();
+            painelTentativas.repaint();
+
+            Thread.sleep(1000);
+
+            conectar();
+            definirPalavra();
+            receberPalavraOponente();
+            atualizarStatus();
+            jogar();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao reiniciar: " + e.getMessage());
         }
     }
 }

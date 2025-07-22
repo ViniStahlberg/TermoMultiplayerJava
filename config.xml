@@ -1,5 +1,5 @@
 <config>
 
-    <servidor ip="192.168.15.2" porta="12345"/>
+    <servidor ip="localhost" porta="12345"/>
 
 </config>
