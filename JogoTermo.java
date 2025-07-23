@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -127,7 +126,7 @@ public class JogoTermo extends JFrame {
         }
     }
 
-    private void definirPalavra() throws Exception {
+    private String pegarPalavra() {
         String p = "";
         while (p.length() != TAM) {
             p = JOptionPane.showInputDialog(this, "Digite sua palavra secreta de 5 letras:");
@@ -136,23 +135,31 @@ public class JogoTermo extends JFrame {
             }
             p = p.trim().toUpperCase();
         }
-        palavraSecreta = p;
+        return p;
+    }
+
+    private void definirPalavra() throws Exception {
+
+        palavraSecreta = pegarPalavra();
         servidorSaida.writeObject(palavraSecreta);
     }
 
     private void receberPalavraOponente() throws Exception {
         String msg = (String) servidorEntrada.readObject();
+        System.out.println(msg);
 
         String[] info = msg.split(";");
 
         if (msg.startsWith("PALAVRA_ATUALIZADA;")) {
-            palavraOponente = info[1];
+            palavraOponente = info[2];
+            suaVez = Boolean.parseBoolean(info[1]);
             JOptionPane.showMessageDialog(this, "Oponente atualizou a palavra secreta!");
             return;
+        } else {
+            suaVez = Boolean.parseBoolean(info[0]);
+            palavraOponente = info[1];
         }
 
-        suaVez = Boolean.parseBoolean(info[0]);
-        palavraOponente = info[1];
     }
 
     private void jogar() {
@@ -163,7 +170,7 @@ public class JogoTermo extends JFrame {
                         String tentativa = (String) servidorEntrada.readObject();
 
                         if (tentativa.startsWith("PALAVRA_ATUALIZADA;")) {
-                            palavraOponente = tentativa.split(";")[1];
+                            //palavraOponente = tentativa.split(";")[2];
                             JOptionPane.showMessageDialog(this, "O oponente trocou a palavra secreta!");
                         } else {
 
@@ -292,16 +299,16 @@ public class JogoTermo extends JFrame {
             Thread.sleep(1000);
 
             // conectar();
-            definirPalavra();
-            // receberPalavraOponente();
-            String resposta = (String) servidorEntrada.readObject();
-            if (!resposta.startsWith("true;") && !resposta.startsWith("false;")) {
-                throw new Exception("Resposta inválida do servidor: " + resposta);
-            }
+            atualizarPalavraSecreta();
+            receberPalavraOponente();
+            //String resposta = (String) servidorEntrada.readObject();
+            //if (!resposta.startsWith("true;") && !resposta.startsWith("false;")) {
+            //    throw new Exception("Resposta inválida do servidor: " + resposta);
+            //}
 
-            String[] info = resposta.split(";");
-            suaVez = Boolean.parseBoolean(info[0]);
-            palavraOponente = info[1];
+            //String[] info = resposta.split(";");
+            //suaVez = Boolean.parseBoolean(resposta.split(";")[1]);
+            //palavraOponente = resposta.split(";")[2];
             atualizarStatus();
             jogar();
 
@@ -310,13 +317,9 @@ public class JogoTermo extends JFrame {
         }
     }
 
-    public void atualizarPalavraSecreta(String novaPalavra) throws Exception {
-        if (novaPalavra.length() == TAM) {
-            palavraSecreta = novaPalavra.trim().toUpperCase();
-            servidorSaida.writeObject("ATUALIZAR_PALAVRA;" + palavraSecreta); // Envia um comando especial
-            servidorSaida.flush();
-        } else {
-            JOptionPane.showMessageDialog(this, "A palavra deve ter " + TAM + " letras!");
-        }
+    public void atualizarPalavraSecreta() throws Exception {
+        palavraSecreta = pegarPalavra();
+        servidorSaida.writeObject("ATUALIZAR_PALAVRA;" + palavraSecreta); // Envia um comando especial
+        servidorSaida.flush();
     }
 }

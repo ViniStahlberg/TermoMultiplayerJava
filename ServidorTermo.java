@@ -13,7 +13,7 @@ public class ServidorTermo {
         ServerSocket servidor = new ServerSocket(Config.getPorta(), 2, InetAddress.getByName(Config.getIp()));
         System.out.println("Servidor Termo iniciado: " + servidor + "\n");
 
-        while (true) {
+        //while (true) {
             System.out.println("Aguardando conexão do Jogador 1...");
             Socket socketJogador1 = servidor.accept();
             System.out.println("Jogador 1 conectado: " + socketJogador1.getInetAddress());
@@ -45,7 +45,7 @@ public class ServidorTermo {
 
             Thread t1 = new Thread(() -> {
                 try {
-                    repassar(in1, out2);
+                    repassar(in1, out2, "true");
                 } finally {
                     fecharConexao(socketJogador1, in1, out1);
                 }
@@ -53,7 +53,7 @@ public class ServidorTermo {
 
             Thread t2 = new Thread(() -> {
                 try {
-                    repassar(in2, out1);
+                    repassar(in2, out1, "false");
                 } finally {
                     fecharConexao(socketJogador2, in2, out2);
                 }
@@ -64,18 +64,18 @@ public class ServidorTermo {
 
             t1.join();
             t2.join();
-            System.out.println("Partida encerrada. Reiniciando servidor para nova partida...");
-        }
+            //System.out.println("Partida encerrada. Reiniciando servidor para nova partida...");
+        //}
     }
 
-    private static void repassar(ObjectInputStream in, ObjectOutputStream out) {
+    private static void repassar(ObjectInputStream in, ObjectOutputStream out, String vez) {
         try {
             while (true) {
                 String tentativa = (String) in.readObject();
 
                 if (tentativa.startsWith("ATUALIZAR_PALAVRA;")) {
                     String novaPalavra = tentativa.split(";")[1];
-                    out.writeObject("PALAVRA_ATUALIZADA;" + novaPalavra);
+                    out.writeObject("PALAVRA_ATUALIZADA" + vez + ";" + novaPalavra);
                     out.flush();
                 } else {
                     out.writeObject(tentativa);
