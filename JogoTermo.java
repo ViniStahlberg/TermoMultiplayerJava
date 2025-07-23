@@ -134,6 +134,10 @@ public class JogoTermo extends JFrame {
                 System.exit(0);
             }
             p = p.trim().toUpperCase();
+               if (p.length() == TAM && !ValidarPalavras.palavraValida(p)) {
+            JOptionPane.showMessageDialog(this, "Palavra inválida! Digite uma palavra existente.");
+            p = ""; 
+             }
         }
         return p;
     }

@@ -26,4 +26,3 @@ public class GerenciadorDeJogadas implements Runnable {
         }
     }
 }
-
