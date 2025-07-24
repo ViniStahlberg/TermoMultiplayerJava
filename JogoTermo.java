@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class JogoTermo extends JFrame {
+    private GerenciadorDeSons gerenciadorDeSons;
 
     private int TAM = 5;
     private int MAX = 15;
@@ -30,6 +31,9 @@ public class JogoTermo extends JFrame {
     private JPanel painelInferior;
 
     public JogoTermo() throws Exception {
+            
+        gerenciadorDeSons = new GerenciadorDeSons();
+        
         JanelaJogo();
 
         conectar();
@@ -41,6 +45,8 @@ public class JogoTermo extends JFrame {
         atualizarStatus();
 
         jogar();
+        
+        gerenciadorDeSons.tocarSomInicio();
     }
 
     private void conectar() throws Exception {
@@ -102,6 +108,12 @@ public class JogoTermo extends JFrame {
             campoEntrada.setText("");
 
             if (tentativa.length() == TAM) {
+                
+            if (!ValidarPalavras.palavraValida(tentativa)) {
+                JOptionPane.showMessageDialog(this, "Palavra inválida! Digite uma palavra existente no dicionário.");
+                return; 
+            }
+                
                 try {
                     feitas++;
                     servidorSaida.writeObject(tentativa);
@@ -274,6 +286,16 @@ public class JogoTermo extends JFrame {
 
     private void finalizarJogo(String mensagem) {
         fim = true;
+        
+        if(mensagem.contains("Parabéns!")){
+            gerenciadorDeSons.tocarSomVitoria();
+        }else{
+            gerenciadorDeSons.tocarSomDerrota();
+        }
+            
+        
+        
+        
         JOptionPane.showMessageDialog(this, mensagem);
 
         int opcao = JOptionPane.showConfirmDialog(this, "Deseja jogar novamente?", "Reiniciar",

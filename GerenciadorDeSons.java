@@ -2,6 +2,8 @@ package jogotermo;
 
 import javax.sound.sampled.*;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class GerenciadorDeSons {
     private Clip somInicio;
@@ -24,11 +26,20 @@ public class GerenciadorDeSons {
     }
 
     private Clip carregarSom(String caminho) throws Exception {
+        try {
         File arquivoSom = new File(caminho);
+        if (!arquivoSom.exists()) {
+            throw new FileNotFoundException("Arquivo de som não encontrado: " + caminho);
+        }
+        
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(arquivoSom);
         Clip clip = AudioSystem.getClip();
         clip.open(audioStream);
         return clip;
+    } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+        System.err.println("Erro ao carregar som: " + caminho);
+        throw e;
+         }
     }
 
     public void tocarSomInicio() {
