@@ -11,13 +11,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class ValidarPalavras {
-    private static Set<String> palavrasValidas = new HashSet<>();
+    private static Set<String> palavrasProibidas = new HashSet<>();
 
     static {
-        carregarDicionario();
+        carregarPalavrasProibidas();
     }
 
-    private static void carregarDicionario() {
+    private static void carregarPalavrasProibidas() {
         try {
             File arquivo = new File("palavras.xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -31,15 +31,15 @@ public class ValidarPalavras {
                 Node nNode = nList.item(i);
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element eElement = (Element) nNode;
-                    palavrasValidas.add(eElement.getTextContent().toUpperCase());
+                    palavrasProibidas.add(eElement.getTextContent().toUpperCase());
                 }
             }
         } catch (Exception e) {
-            System.err.println("Erro ao carregar dicionário: " + e.getMessage());
+            System.err.println("Erro ao carregar palavras proibidas: " + e.getMessage());
         }
     }
 
     public static boolean palavraValida(String palavra) {
-        return palavrasValidas.contains(palavra.toUpperCase());
+        return !palavrasProibidas.contains(palavra.toUpperCase());
     }
 }

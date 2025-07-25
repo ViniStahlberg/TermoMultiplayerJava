@@ -16,10 +16,9 @@ public class GerenciadorDeSons {
 
     private void carregarSons() {
         try {
-            // Carrega os arquivos de som
             somInicio = carregarSom("sounds/start.wav");
-            somVitoria = carregarSom("sounds/win.wav");
-            somDerrota = carregarSom("sounds/lose.wav");
+            somVitoria = carregarSom("sounds/ganhador.wav");
+            somDerrota = carregarSom("sounds/perdedor.wav");
         } catch (Exception e) {
             System.err.println("Erro ao carregar sons: " + e.getMessage());
         }
@@ -56,7 +55,7 @@ public class GerenciadorDeSons {
 
     private void tocarSom(Clip clip) {
         if (clip != null) {
-            clip.setFramePosition(0); // Reinicia o som
+            clip.setFramePosition(0);
             clip.start();
         }
     }
